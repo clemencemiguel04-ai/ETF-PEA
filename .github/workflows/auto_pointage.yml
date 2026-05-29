@@ -1,0 +1,33 @@
+name: Pointage automatique PEA
+
+on:
+  schedule:
+    - cron: '0 17 * * 1-5'  # 18h heure de Paris (17h UTC) du lundi au vendredi
+  workflow_dispatch:          # Permet aussi de lancer manuellement depuis GitHub
+
+jobs:
+  pointage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Récupérer le repo
+        uses: actions/checkout@v4
+
+      - name: 🐍 Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Installer les dépendances
+        run: pip install yfinance pandas openpyxl
+
+      - name: 📈 Lancer le pointage
+        run: python auto_pointage.py
+
+      - name: 💾 Commiter le fichier Excel mis à jour
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add suivi_pea_detail.xlsx
+          git diff --staged --quiet || git commit -m "📈 Pointage automatique du $(date +'%d/%m/%Y')"
+          git push
