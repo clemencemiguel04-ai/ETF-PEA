@@ -230,7 +230,99 @@ if not df.empty:
     )
     st.plotly_chart(fig_etf, use_container_width=True)
 
-    # --- 4. DÉTAIL PAR LIGNE ---
+    # --- 4. GRAPHIQUE HISTORIQUE 5 ANS ---
+    st.divider()
+    st.subheader("🕰️ Historique 5 ans (base 100)")
+    st.caption("Toutes les courbes sont normalisées à 100 au départ pour comparer les performances.")
+
+    TICKERS_5ANS = {
+        # Mes ETF
+        "PAASI":  "PAASI.PA",
+        "PINDIA": "PINR.PA",
+        "PUST":   "PUST.PA",
+        "EFENSE": "GUARD.PA",
+        "IWSC":   "WPEA.PA",
+        # ETF de référence
+        "MSCI World (CW8)":     "CW8.PA",
+        "S&P 500 (SP5)":        "SP5.PA",
+        "Nasdaq-100 (UST)":     "UST.PA",
+        "Émergents (PAEEM)":    "PAEEM.PA",
+        "Nasdaq Amundi (PANX)": "PANX.PA",
+        "Luxe (LOOKS)":         "LOOKS.PA",
+        # Indices
+        "MSCI World (indice)":  "URTH",
+        "S&P 500 (indice)":     "^GSPC",
+        "CAC 40 (indice)":      "^FCHI",
+    }
+
+    COULEURS_5ANS = {
+        "PAASI":  "#3B82F6",
+        "PINDIA": "#F59E0B",
+        "PUST":   "#10B981",
+        "EFENSE": "#8B5CF6",
+        "IWSC":   "#EF4444",
+        "MSCI World (CW8)":     "#93C5FD",
+        "S&P 500 (SP5)":        "#FCD34D",
+        "Nasdaq-100 (UST)":     "#6EE7B7",
+        "Émergents (PAEEM)":    "#C4B5FD",
+        "Nasdaq Amundi (PANX)": "#FCA5A5",
+        "Luxe (LOOKS)":         "#F9A8D4",
+        "MSCI World (indice)":  "#FFFFFF",
+        "S&P 500 (indice)":     "#D1D5DB",
+        "CAC 40 (indice)":      "#9CA3AF",
+    }
+
+    @st.cache_data(ttl=3600)
+    def get_historique_5ans():
+        from datetime import datetime, timedelta
+        date_debut = (datetime.today() - timedelta(days=5*365)).strftime('%Y-%m-%d')
+        historique = {}
+        for nom, ticker in TICKERS_5ANS.items():
+            try:
+                data = yf.download(ticker, start=date_debut, progress=False, auto_adjust=True)
+                if not data.empty:
+                    serie = data['Close'].squeeze()
+                    historique[nom] = (serie / serie.iloc[0]) * 100
+            except Exception:
+                pass
+        return historique
+
+    with st.spinner("Chargement de l'historique 5 ans..."):
+        historique = get_historique_5ans()
+
+    tous = list(historique.keys())
+    mes_etf_defaut = [e for e in ["PAASI", "PINDIA", "PUST", "EFENSE", "IWSC"] if e in tous]
+    selection = st.multiselect(
+        "Sélectionner les courbes à afficher :",
+        options=tous,
+        default=mes_etf_defaut
+    )
+
+    fig_5ans = go.Figure()
+    for nom in selection:
+        if nom in historique:
+            is_indice = "(indice)" in nom
+            fig_5ans.add_trace(go.Scatter(
+                x=historique[nom].index,
+                y=historique[nom].values,
+                mode='lines',
+                name=nom,
+                line=dict(
+                    color=COULEURS_5ANS.get(nom, "#FFFFFF"),
+                    width=1.5 if is_indice else 2,
+                    dash='dot' if is_indice else 'solid'
+                )
+            ))
+
+    fig_5ans.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white"), hovermode="x unified",
+        margin=dict(l=0, r=0, t=10, b=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+    )
+    st.plotly_chart(fig_5ans, use_container_width=True)
+
+    # --- 5. DÉTAIL PAR LIGNE ---
     st.divider()
     st.subheader("🔎 Détail par ligne (Dernier pointage)")
 
