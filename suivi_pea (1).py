@@ -340,24 +340,22 @@ if not df.empty:
 
     with st.expander("📂 Voir tout l'historique brut Excel"):
         st.dataframe(df)
-with st.expander("📂 Voir tout l'historique brut Excel"):
-        st.dataframe(df)
 
     with st.expander("🗑️ Supprimer une ligne"):
-        if not df.empty:
-            df_affichage = df.copy()
-            df_affichage.index = range(len(df_affichage))
-            st.dataframe(df_affichage[["Date", "ETF", "Quantité", "PRU", "Espèces du PEA (€)"]], use_container_width=True)
-            
-            index_a_supprimer = st.number_input(
-                "Numéro de la ligne à supprimer (voir index ci-dessus)",
-                min_value=0, max_value=len(df_affichage)-1, step=1
-            )
-            
-            if st.button("🗑️ Supprimer cette ligne"):
-                df = df.drop(df.index[index_a_supprimer]).reset_index(drop=True)
-                sauvegarder_donnees(df)
-                st.success("✅ Ligne supprimée !")
-                st.rerun()
+        df_affichage = df.copy()
+        df_affichage.index = range(len(df_affichage))
+        st.dataframe(df_affichage[["Date", "ETF", "Quantité", "PRU", "Espèces du PEA (€)"]], use_container_width=True)
+
+        index_a_supprimer = st.number_input(
+            "Numéro de la ligne à supprimer (voir index ci-dessus)",
+            min_value=0, max_value=len(df_affichage)-1, step=1
+        )
+
+        if st.button("🗑️ Supprimer cette ligne"):
+            df = df.drop(df.index[index_a_supprimer]).reset_index(drop=True)
+            sauvegarder_donnees(df)
+            st.success("✅ Ligne supprimée !")
+            st.rerun()
+
 else:
     st.info("👋 Sélectionne un ETF et entre tes données pour commencer !")
