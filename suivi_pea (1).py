@@ -162,7 +162,18 @@ if not df.empty:
 if not df.empty:
     df['Date'] = pd.to_datetime(df['Date'])
     date_la_plus_recente = df['Date'].max()
-    df_recent = df[df['Date'] == date_la_plus_recente]
+    df_recent = df[df['Date'] == date_la_plus_recente].copy()
+
+    # ✅ Recalcul en temps réel avec les prix live
+    for etf, prix in prix_live.items():
+        if prix is not None:
+            mask = df_recent['ETF'] == etf
+            df_recent.loc[mask, 'Prix Actuel'] = prix
+            df_recent.loc[mask, 'Valeur Ligne (€)'] = df_recent.loc[mask, 'Quantité'] * prix
+            df_recent.loc[mask, '+/- Value Ligne (€)'] = df_recent.loc[mask, 'Valeur Ligne (€)'] - df_recent.loc[mask, 'Investi Ligne (€)']
+            df_recent.loc[mask, '+/- Value Ligne (%)'] = (
+                df_recent.loc[mask, '+/- Value Ligne (€)'] / df_recent.loc[mask, 'Investi Ligne (€)'] * 100
+            ).where(df_recent.loc[mask, 'Investi Ligne (€)'] > 0, 0)
 
     # Calculs pour le Dashboard global
     evaluation_titres = df_recent['Valeur Ligne (€)'].sum()
@@ -191,7 +202,11 @@ if not df.empty:
     # --- 2. GRAPHIQUE ÉVOLUTION ---
     st.subheader("📊 Évolution Historique")
 
-    df_grouped = df.groupby('Date').agg({
+    # Fusion des données historiques avec les valeurs live du jour
+    df_pour_graphe = df[df['Date'] != date_la_plus_recente].copy()
+    df_pour_graphe = pd.concat([df_pour_graphe, df_recent], ignore_index=True)
+
+    df_grouped = df_pour_graphe.groupby('Date').agg({
         'Investi Ligne (€)': 'sum',
         'Valeur Ligne (€)': 'sum',
         'Espèces du PEA (€)': 'max'
@@ -241,8 +256,8 @@ if not df.empty:
 
     fig_etf = go.Figure()
 
-    for etf in df['ETF'].unique():
-        df_etf = df[df['ETF'] == etf].sort_values('Date')
+    for etf in df_pour_graphe['ETF'].unique():
+        df_etf = df_pour_graphe[df_pour_graphe['ETF'] == etf].sort_values('Date')
         if type_affichage_etf == "+/- Value (%)":
             fig_etf.add_trace(go.Scatter(
                 x=df_etf["Date"], y=df_etf["+/- Value Ligne (%)"],
