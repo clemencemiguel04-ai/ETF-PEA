@@ -23,7 +23,7 @@ YAHOO_TICKERS = {
     "IWSC":   "WPEA.PA",
 }
 
-@st.cache_data(ttl=300)  # cache 5 minutes
+@st.cache_data(ttl=300)
 def get_prix_actuels():
     prix = {}
     for nom, ticker in YAHOO_TICKERS.items():
@@ -82,7 +82,7 @@ with st.container():
         else:
             cols[i].metric(nom, "N/A ⚠️")
 
-# Formulaire d'ajout de données
+# --- Formulaire d'ajout de données ETF (SANS champ espèces) ---
 with st.expander("➕ Saisir les données d'un ETF", expanded=df.empty):
     with st.form("ajout_donnees"):
         col1, col2, col3 = st.columns(3)
@@ -100,7 +100,6 @@ with st.expander("➕ Saisir les données d'un ETF", expanded=df.empty):
         with col3:
             prix_live_etf = prix_live.get(nom_etf) or 0.0
             prix_actuel = st.number_input("Prix actuel de l'ETF (€)", min_value=0.0, value=prix_live_etf, step=0.001, format="%0.3f")
-            especes = st.number_input("Espèces sur le PEA (€)", min_value=0.0, step=0.01)
 
         soumis = st.form_submit_button("💾 Calculer et Enregistrer")
 
@@ -109,6 +108,15 @@ with st.expander("➕ Saisir les données d'un ETF", expanded=df.empty):
             valeur_ligne = quantite * prix_actuel
             plus_moins_value_euros = valeur_ligne - investi_ligne
             plus_moins_value_pct = (plus_moins_value_euros / investi_ligne * 100) if investi_ligne > 0 else 0
+
+            # Récupérer les espèces de la date la plus récente existante
+            especes_existantes = 0.0
+            if not df.empty:
+                df['Date'] = pd.to_datetime(df['Date'])
+                date_recente = df['Date'].max()
+                especes_existantes = df[df['Date'] == date_recente]['Espèces du PEA (€)'].max()
+                if pd.isna(especes_existantes):
+                    especes_existantes = 0.0
 
             nouvelle_ligne = pd.DataFrame([{
                 "Date": saisie_date,
@@ -120,13 +128,36 @@ with st.expander("➕ Saisir les données d'un ETF", expanded=df.empty):
                 "Valeur Ligne (€)": valeur_ligne,
                 "+/- Value Ligne (€)": plus_moins_value_euros,
                 "+/- Value Ligne (%)": plus_moins_value_pct,
-                "Espèces du PEA (€)": especes
+                "Espèces du PEA (€)": especes_existantes  # reprend les espèces existantes
             }])
 
             df = pd.concat([df, nouvelle_ligne], ignore_index=True)
             sauvegarder_donnees(df)
             st.success(f"✅ Données pour {nom_etf} enregistrées !")
             st.rerun()
+
+# --- Formulaire SÉPARÉ pour mettre à jour les espèces ---
+if not df.empty:
+    df['Date'] = pd.to_datetime(df['Date'])
+    date_la_plus_recente = df['Date'].max()
+    df_recent = df[df['Date'] == date_la_plus_recente]
+    especes_actuelles_val = float(df_recent['Espèces du PEA (€)'].max() or 0.0)
+
+    with st.expander("💰 Mettre à jour les espèces du PEA"):
+        with st.form("maj_especes"):
+            nouvelles_especes = st.number_input(
+                "Espèces actuelles sur le PEA (€)",
+                min_value=0.0,
+                value=especes_actuelles_val,
+                step=0.01,
+                format="%0.2f"
+            )
+            if st.form_submit_button("💾 Mettre à jour les espèces"):
+                # Met à jour TOUTES les lignes de la date la plus récente, sans créer de nouvelle ligne
+                df.loc[df['Date'] == date_la_plus_recente, 'Espèces du PEA (€)'] = nouvelles_especes
+                sauvegarder_donnees(df)
+                st.success("✅ Espèces mises à jour !")
+                st.rerun()
 
 if not df.empty:
     df['Date'] = pd.to_datetime(df['Date'])
@@ -136,6 +167,8 @@ if not df.empty:
     # Calculs pour le Dashboard global
     evaluation_titres = df_recent['Valeur Ligne (€)'].sum()
     especes_actuelles = df_recent['Espèces du PEA (€)'].max()
+    if pd.isna(especes_actuelles):
+        especes_actuelles = 0.0
     total_pea = evaluation_titres + especes_actuelles
 
     total_investi_titres = df_recent['Investi Ligne (€)'].sum()
@@ -159,7 +192,9 @@ if not df.empty:
     st.subheader("📊 Évolution Historique")
 
     df_grouped = df.groupby('Date').agg({
-        'Investi Ligne (€)': 'sum', 'Valeur Ligne (€)': 'sum', 'Espèces du PEA (€)': 'max'
+        'Investi Ligne (€)': 'sum',
+        'Valeur Ligne (€)': 'sum',
+        'Espèces du PEA (€)': 'max'
     }).reset_index()
 
     df_grouped['Total Investi (€)'] = df_grouped['Investi Ligne (€)'] + df_grouped['Espèces du PEA (€)']
@@ -236,20 +271,17 @@ if not df.empty:
     st.caption("Toutes les courbes sont normalisées à 100 au départ pour comparer les performances.")
 
     TICKERS_5ANS = {
-        # Mes ETF
         "PAASI":  "PAASI.PA",
         "PINDIA": "PINR.PA",
         "PUST":   "PUST.PA",
         "EFENSE": "GUARD.PA",
         "IWSC":   "WPEA.PA",
-        # ETF de référence
         "MSCI World (CW8)":     "CW8.PA",
         "S&P 500 (SP5)":        "SP5.PA",
         "Nasdaq-100 (UST)":     "UST.PA",
         "Émergents (PAEEM)":    "PAEEM.PA",
         "Nasdaq Amundi (PANX)": "PANX.PA",
         "Luxe (LOOKS)":         "LOOKS.PA",
-        # Indices
         "MSCI World (indice)":  "URTH",
         "S&P 500 (indice)":     "^GSPC",
         "CAC 40 (indice)":      "^FCHI",
