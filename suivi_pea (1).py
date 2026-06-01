@@ -11,8 +11,11 @@ st.set_page_config(page_title="Dashboard PEA", page_icon="📈", layout="wide")
 
 FICHIER_EXCEL = "suivi_pea_detail.xlsx"
 
-# ⏱️ Refresh automatique toutes les 5 minutes
-st_autorefresh(interval=5 * 60 * 1000, key="autorefresh")
+# ⏱️ Refresh toutes les 5 min uniquement pendant les heures de marché (9h-18h)
+from datetime import datetime as _dt
+_heure = _dt.now().hour
+if 9 <= _heure < 18:
+    st_autorefresh(interval=5 * 60 * 1000, key="autorefresh")
 
 # --- Tickers Yahoo Finance ---
 YAHOO_TICKERS = {
