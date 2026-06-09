@@ -6,9 +6,14 @@ from datetime import date
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
-# --- Configuration de la page ---
+# 1. CETTE CONFIGURATION DOIT OBLIGATOIREMENT ÊTRE PLACÉE EN PREMIER
 st.set_page_config(page_title="Dashboard PEA", page_icon="📈", layout="wide")
 
+# 2. PUIS ON CRÉE LE MENU DE NAVIGATION DANS LA BARRE LATÉRALE
+st.sidebar.page_link("suivi_pea (1).py", label="Tableau de Bord PEA", icon="📊")
+st.sidebar.page_link("pages/Predictions.py", label="🔮 Prédictions ETF", icon="🔮")
+
+# 3. LE RESTE DE TON CODE SOURCE INITIAL CONTINUE ICI...
 FICHIER_EXCEL = "suivi_pea_detail.xlsx"
 
 # ⏱️ Refresh toutes les 5 min uniquement pendant les heures de marché (9h-18h)
