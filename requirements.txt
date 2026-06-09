@@ -1,6 +1,9 @@
 streamlit
-pandas
-plotly
-openpyxl
 yfinance
-streamlit-autorefresh
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+joblib
+openpyxl
