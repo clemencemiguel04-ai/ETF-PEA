@@ -43,18 +43,12 @@ except ImportError:
 # ════════════════════════════════════════════════════════════════════
 
 TICKERS = {
-    "PAASI": "PAASI.PA",   # Amundi PEA MSCI Emerging Asia
+    "PAASI": "PANX.PA",   # Amundi MSCI AC Asia Pacific (Actif et stable sur Yahoo Finance)
     "PINDIA": "PINR.PA",   # Amundi PEA MSCI India
     "PUST":  "PUST.PA",    # Lyxor PEA Nasdaq-100
-    "EFENSE": "DEFS.PA",   # Amundi Stoxx Europe Defense (ou DFNS.PA VanEck)
-    "IWSC":  "IWSC.PA",    # iShares MSCI World Small Cap
+    "EFENSE": "GUARD.PA",  # BNP Paribas Easy Bloomberg Europe Defense
+    "IWSC":  "WPEA.PA",    # iShares MSCI World Swap PEA
 }
-
-HORIZON_JOURS = 126          # ≈ 6 mois de trading (21j × 6)
-TRAIN_YEARS   = 5            # années d'historique pour l'entraînement
-N_ESTIMATORS  = 500          # arbres dans la forêt
-N_SPLITS      = 5            # folds pour la validation croisée temporelle
-RANDOM_STATE  = 42
 
 # ════════════════════════════════════════════════════════════════════
 #  1. TÉLÉCHARGEMENT DES DONNÉES
