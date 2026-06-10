@@ -50,6 +50,12 @@ TICKERS = {
     "IWSC":  "WPEA.PA",    # iShares MSCI World Swap PEA
 }
 
+HORIZON_JOURS = 126          # ≈ 6 mois de trading (21j × 6)
+TRAIN_YEARS   = 5            # années d'historique pour l'entraînement
+N_ESTIMATORS  = 500          # arbres dans la forêt
+N_SPLITS      = 5            # folds pour la validation croisée temporelle
+RANDOM_STATE  = 42
+
 # ════════════════════════════════════════════════════════════════════
 #  1. TÉLÉCHARGEMENT DES DONNÉES
 # ════════════════════════════════════════════════════════════════════
