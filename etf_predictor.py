@@ -43,11 +43,11 @@ except ImportError:
 # ════════════════════════════════════════════════════════════════════
 
 TICKERS = {
-    "PAASI": "PANX.PA",   # Amundi MSCI AC Asia Pacific (Actif et stable sur Yahoo Finance)
+    "PAASI": "PAASI.PA",   # Amundi PEA MSCI Emerging Asia
     "PINDIA": "PINR.PA",   # Amundi PEA MSCI India
     "PUST":  "PUST.PA",    # Lyxor PEA Nasdaq-100
-    "EFENSE": "GUARD.PA",  # BNP Paribas Easy Bloomberg Europe Defense
-    "IWSC":  "WPEA.PA",    # iShares MSCI World Swap PEA
+    "EFENSE": "DEFS.PA",   # Amundi Stoxx Europe Defense (ou DFNS.PA VanEck)
+    "IWSC":  "IWSC.PA",    # iShares MSCI World Small Cap
 }
 
 HORIZON_JOURS = 126          # ≈ 6 mois de trading (21j × 6)
