@@ -138,6 +138,9 @@ def compute_features(df):
 def build_dataset(data, horizon):
     datasets = {}
     for name, df in data.items():
+        # Besoin minimum : horizon + 200 jours d'entraînement + marge features
+        if len(df) < horizon + 300:
+            continue
         feat = compute_features(df)
         future_ret = df["Close"].pct_change(horizon).shift(-horizon) * 100
         direction  = (future_ret > 0).astype(int)
@@ -145,6 +148,8 @@ def build_dataset(data, horizon):
         combined["__y_ret__"] = future_ret
         combined["__y_dir__"] = direction
         combined = combined.dropna()
+        if len(combined) < 100:
+            continue
         X     = combined.drop(columns=["__y_ret__", "__y_dir__"])
         y_dir = combined["__y_dir__"]
         y_ret = combined["__y_ret__"]
@@ -153,6 +158,8 @@ def build_dataset(data, horizon):
 
 
 def safe_n_splits(n_samples, max_splits=5, min_train=200):
+    if n_samples <= min_train:
+        return 2
     possible = (n_samples - min_train) // max(min_train // max_splits, 1)
     return max(2, min(possible, max_splits))
 
@@ -416,6 +423,23 @@ if st.button("🚀 Calculer et afficher les prédictions en direct"):
 
         # Features
         datasets = build_dataset(data, horizon=HORIZON_JOURS)
+
+        # Avertir si des ETFs ont été ignorés (pas assez d'historique)
+        ignores = [n for n in data if n not in datasets]
+        if ignores:
+            st.warning(f"⚠️ ETF(s) ignoré(s) par manque d'historique : {', '.join(ignores)}. Données simulées utilisées à la place.")
+            # Ajouter les ETFs ignorés avec données simulées
+            for n in ignores:
+                from datetime import datetime as _dt
+                sim_data = {n: simulate_etf(n, n_days=TRAIN_YEARS * 252)}
+                sim_datasets = build_dataset(sim_data, horizon=HORIZON_JOURS)
+                datasets.update(sim_datasets)
+                data.update(sim_data)
+
+        if not datasets:
+            st.error("❌ Aucun ETF n'a suffisamment de données.")
+            st.stop()
+
         progress.progress(0.30, text="🏋️ Entraînement du Random Forest...")
 
         # Entraînement
