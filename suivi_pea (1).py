@@ -76,7 +76,6 @@ def get_prix_actuels():
                 break
             except Exception as e1:
                 try:
-                    # Fallback : on tente via .info si fast_info échoue
                     if data is None:
                         data = yf.Ticker(ticker)
                     info = data.info
@@ -174,8 +173,8 @@ with st.expander("➕ Saisir les données d'un ETF", expanded=df.empty):
             especes_existantes = 0.0
             if not df.empty:
                 df['Date'] = pd.to_datetime(df['Date'])
-                date_recente = df['Date'].max()
-                especes_existantes = df[df['Date'] == date_recente]['Espèces du PEA (€)'].max()
+                date_recente_avant_ajout = df['Date'].max()
+                especes_existantes = df[df['Date'] == date_recente_avant_ajout]['Espèces du PEA (€)'].max()
                 if pd.isna(especes_existantes):
                     especes_existantes = 0.0
 
@@ -192,9 +191,45 @@ with st.expander("➕ Saisir les données d'un ETF", expanded=df.empty):
                 "Espèces du PEA (€)": especes_existantes  # reprend les espèces existantes
             }])
 
-            df = pd.concat([df, nouvelle_ligne], ignore_index=True)
+            lignes_a_ajouter = [nouvelle_ligne]
+
+            # 🔁 REPORT AUTOMATIQUE DES AUTRES ETF À CETTE MÊME DATE
+            # Sans ça, les ETF non-resaisis "disparaissent" du dernier pointage,
+            # car le dashboard n'affiche que les lignes de la date la plus récente.
+            if not df.empty:
+                saisie_date_ts = pd.to_datetime(saisie_date)
+                autres_etfs = [e for e in MES_ETFS.values() if e != nom_etf]
+                for autre_etf in autres_etfs:
+                    deja_present = ((df['ETF'] == autre_etf) & (df['Date'] == saisie_date_ts)).any()
+                    if not deja_present:
+                        df_etf_hist = df[df['ETF'] == autre_etf].sort_values('Date')
+                        if not df_etf_hist.empty:
+                            derniere = df_etf_hist.iloc[-1]
+                            q = derniere['Quantité']
+                            p = derniere['PRU']
+                            prix_a = prix_live.get(autre_etf) or derniere['Prix Actuel']
+                            inv = q * p
+                            val = q * prix_a
+                            pmv_e = val - inv
+                            pmv_p = (pmv_e / inv * 100) if inv > 0 else 0
+
+                            ligne_reportee = pd.DataFrame([{
+                                "Date": saisie_date,
+                                "ETF": autre_etf,
+                                "Quantité": q,
+                                "PRU": p,
+                                "Prix Actuel": prix_a,
+                                "Investi Ligne (€)": inv,
+                                "Valeur Ligne (€)": val,
+                                "+/- Value Ligne (€)": pmv_e,
+                                "+/- Value Ligne (%)": pmv_p,
+                                "Espèces du PEA (€)": especes_existantes
+                            }])
+                            lignes_a_ajouter.append(ligne_reportee)
+
+            df = pd.concat([df] + lignes_a_ajouter, ignore_index=True)
             sauvegarder_donnees(df)
-            st.success(f"✅ Données pour {nom_etf} enregistrées !")
+            st.success(f"✅ Données pour {nom_etf} enregistrées ! (les autres ETF ont été reportés à cette date)")
             st.rerun()
 
 # --- Formulaire SÉPARÉ pour mettre à jour les espèces ---
