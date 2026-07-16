@@ -65,12 +65,29 @@ YAHOO_TICKERS = {
 @st.cache_data(ttl=300)
 def get_prix_actuels():
     prix = {}
+    erreurs = {}
     for nom, ticker in YAHOO_TICKERS.items():
-        try:
-            data = yf.Ticker(ticker)
-            prix[nom] = round(data.fast_info["last_price"], 3)
-        except Exception:
-            prix[nom] = None
+        valeur = None
+        data = None
+        for tentative in range(2):  # 1 essai + 1 retry
+            try:
+                data = yf.Ticker(ticker)
+                valeur = round(data.fast_info["last_price"], 3)
+                break
+            except Exception as e1:
+                try:
+                    # Fallback : on tente via .info si fast_info échoue
+                    if data is None:
+                        data = yf.Ticker(ticker)
+                    info = data.info
+                    prix_fallback = info.get("regularMarketPrice") or info.get("previousClose")
+                    if prix_fallback:
+                        valeur = round(prix_fallback, 3)
+                        break
+                except Exception as e2:
+                    erreurs[nom] = f"fast_info: {e1} | info: {e2}"
+        prix[nom] = valeur
+    st.session_state["erreurs_prix"] = erreurs
     return prix
 
 # --- Mes ETFs ---
@@ -111,6 +128,11 @@ prix_live = get_prix_actuels()
 
 # --- Interface Utilisateur ---
 st.title("📈 Tableau de Bord PEA")
+
+# Affichage des erreurs de récupération de prix, si présentes
+if st.session_state.get("erreurs_prix"):
+    with st.expander("⚠️ Détails des erreurs de récupération des prix"):
+        st.json(st.session_state["erreurs_prix"])
 
 # Indicateur de statut des prix live
 with st.container():
