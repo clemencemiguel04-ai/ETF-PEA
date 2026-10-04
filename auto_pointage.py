@@ -11,19 +11,21 @@ YAHOO_TICKERS = {
     "PINDIA": "PINR.PA",
     "PUST":   "PUST.PA",
     "EFENSE": "GUARD.PA",
+    "SOITEC": "SOI.PA",
     "IWSC":   "WPEA.PA",
 }
 
-# --- Quantités et PRU ---
+# --- Quantités et PRU (relevés chez le courtier le 04/10/2026) ---
 PORTEFEUILLE = {
-    "PAASI":  {"quantite": 4.0,  "pru": 34.755},
+    "PAASI":  {"quantite": 22.0, "pru": 36.956},
     "PINDIA": {"quantite": 3.0,  "pru": 21.890},
     "PUST":   {"quantite": 1.0,  "pru": 100.090},
     "EFENSE": {"quantite": 3.0,  "pru": 10.387},
+    "SOITEC": {"quantite": 1.0,  "pru": 166.780},
     "IWSC":   {"quantite": 9.0,  "pru": 6.239},
 }
 
-ESPECES = 7.91  # ← Mets à jour si ça change
+ESPECES = 7.71  # ← Mets à jour si ça change
 
 def charger_donnees():
     if os.path.exists(FICHIER_EXCEL):
@@ -68,24 +70,3 @@ def run():
         plus_value_pct = round((plus_value / investi * 100) if investi > 0 else 0, 2)
 
         nouvelles_lignes.append({
-            "Date": aujourd_hui,
-            "ETF": nom,
-            "Quantité": q,
-            "PRU": pru,
-            "Prix Actuel": prix_actuel,
-            "Investi Ligne (€)": investi,
-            "Valeur Ligne (€)": valeur,
-            "+/- Value Ligne (€)": plus_value,
-            "+/- Value Ligne (%)": plus_value_pct,
-            "Espèces du PEA (€)": ESPECES
-        })
-
-    if nouvelles_lignes:
-        df = pd.concat([df, pd.DataFrame(nouvelles_lignes)], ignore_index=True)
-        sauvegarder_donnees(df)
-        print(f"✅ {len(nouvelles_lignes)} lignes sauvegardées dans {FICHIER_EXCEL}")
-    else:
-        print("❌ Aucune donnée récupérée.")
-
-if __name__ == "__main__":
-    run()
